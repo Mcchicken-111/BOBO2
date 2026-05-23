@@ -354,6 +354,11 @@
       </div>
 
       <div class="field">
+        <label for="foodLikes">What type of foods they like</label>
+        <textarea id="foodLikes" placeholder="e.g., pizza, fruit, spicy food, sweet snacks"></textarea>
+      </div>
+
+      <div class="field">
         <label for="dislikes">Things they don&apos;t like</label>
         <textarea id="dislikes"></textarea>
       </div>
@@ -492,6 +497,7 @@
       const interests = document.getElementById("interests").value;
       const values = document.getElementById("values").value;
       const likes = document.getElementById("likes").value;
+      const foodLikes = document.getElementById("foodLikes").value;
       const dislikes = document.getElementById("dislikes").value;
       const clothingStyle = document.querySelector('input[name="clothingStyle"]:checked').value;
       const colors = document.getElementById("colors").value;
@@ -508,6 +514,7 @@
         interests,
         values,
         likes,
+        foodLikes,
         dislikes,
         clothingStyle,
         colors,
