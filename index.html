@@ -466,14 +466,158 @@
       };
     }
 
-    function predictAttitude(profile, meta) {
-      let score = 80;
+    function normalize(text) {
+      return (text || "").toLowerCase().trim();
+    }
 
-      if (meta.unfamiliarPeople && profile.social === "S") score -= 15;
-      if (meta.veryNewPlace && profile.novelty === "R") score -= 15;
-      if ((meta.loud || meta.highEnergy) && profile.sensory === "M") score -= 20;
-      if (meta.earlyMorning && profile.hatesEarlyMornings) score -= 15;
-      if (meta.surprise && profile.hatesSurprises) score -= 15;
+    function containsAny(text, keywords) {
+      const haystack = normalize(text);
+      return keywords.some((keyword) => haystack.includes(keyword));
+    }
+
+    function profileTextScore(profile, description) {
+      let score = 0;
+      const reasons = [];
+      const fullProfileText = [
+        profile.interests,
+        profile.values,
+        profile.likes,
+        profile.foodLikes,
+        profile.dislikes,
+        profile.clothingStyle,
+        profile.colors
+      ].join(" ").toLowerCase();
+      const activity = normalize(description);
+
+      if (
+        containsAny(activity, ["pizza", "burger", "taco", "fruit", "ice cream", "candy", "snack", "chips"]) &&
+        containsAny(fullProfileText, ["pizza", "burger", "taco", "fruit", "ice cream", "candy", "snack", "chips"])
+      ) {
+        score += 8;
+        reasons.push("The food choice fits what the child already enjoys.");
+      }
+
+      if (
+        containsAny(activity, ["movie", "reading", "craft", "quiet", "drawing", "painting", "board game", "puzzle"]) &&
+        containsAny(fullProfileText, ["quiet", "calm", "drawing", "painting", "reading", "craft", "board game", "puzzle"])
+      ) {
+        score += 7;
+        reasons.push("The activity matches the child's calmer interests.");
+      }
+
+      if (
+        containsAny(activity, ["waterpark", "park", "sports", "zoo", "museum", "playground", "trampoline", "camp", "outdoor"]) &&
+        containsAny(fullProfileText, ["active", "sports", "play", "outside", "park", "zoo", "museum", "animals", "adventure"])
+      ) {
+        score += 7;
+        reasons.push("The activity lines up with the child's active or exploratory interests.");
+      }
+
+      if (
+        containsAny(activity, ["spicy", "vegetable", "healthy", "salad"]) &&
+        containsAny(fullProfileText, ["spicy", "vegetable", "healthy", "salad"])
+      ) {
+        score += 4;
+        reasons.push("The food profile is consistent with their taste preferences.");
+      }
+
+      if (
+        containsAny(fullProfileText, ["stay home", "quiet", "alone", "one friend"]) &&
+        containsAny(activity, ["crowd", "big group", "party", "loud"])
+      ) {
+        score -= 12;
+        reasons.push("The plan may be too social for a child who prefers smaller, quieter settings.");
+      }
+
+      if (
+        containsAny(profile.dislikes, ["surprise", "surprises"]) &&
+        containsAny(activity, ["surprise", "unexpected", "new place"])
+      ) {
+        score -= 15;
+        reasons.push("The plan includes surprise or novelty that the child dislikes.");
+      }
+
+      if (
+        containsAny(profile.dislikes, ["early morning", "morning"]) &&
+        containsAny(activity, ["early morning", "morning"])
+      ) {
+        score -= 8;
+        reasons.push("The plan may conflict with the child’s preference to avoid early mornings.");
+      }
+
+      if (
+        containsAny(profile.clothingStyle, ["rougher and stylish"]) &&
+        containsAny(activity, ["sport", "camp", "adventure", "outdoor"])
+      ) {
+        score += 5;
+        reasons.push("The style preference matches a more adventurous activity.");
+      }
+
+      if (
+        containsAny(profile.clothingStyle, ["comfortable and average"]) &&
+        containsAny(activity, ["movie", "home", "reading", "quiet", "snack"])
+      ) {
+        score += 5;
+        reasons.push("The style preference fits a lower-pressure, comfortable activity.");
+      }
+
+      if (
+        profile.age && Number(profile.age) <= 6 &&
+        containsAny(activity, ["long trip", "overnight", "big group", "waterpark", "crowd"])
+      ) {
+        score -= 6;
+        reasons.push("A younger child may find this plan a bit overwhelming.");
+      }
+
+      return { score, reasons };
+    }
+
+    function predictAttitude(profile, meta) {
+      let score = 78;
+      const reasons = [];
+
+      if (meta.unfamiliarPeople && profile.social === "S") {
+        score -= 15;
+        reasons.push("The plan involves unfamiliar people, which may be stressful for a quieter child.");
+      }
+
+      if (meta.veryNewPlace && profile.novelty === "R") {
+        score -= 15;
+        reasons.push("A very new place may be too much for a child who prefers routine.");
+      }
+
+      if ((meta.loud || meta.highEnergy) && profile.sensory === "M") {
+        score -= 20;
+        reasons.push("The activity may be too loud or intense for a mellow child.");
+      }
+
+      if (meta.earlyMorning && profile.hatesEarlyMornings) {
+        score -= 15;
+        reasons.push("The timing conflicts with the child’s dislike of early mornings.");
+      }
+
+      if (meta.surprise && profile.hatesSurprises) {
+        score -= 15;
+        reasons.push("The plan includes surprise, which the child dislikes.");
+      }
+
+      if (meta.highEnergy && profile.sensory === "A") {
+        score += 8;
+        reasons.push("The activity has a strong energy match for an active child.");
+      }
+
+      if (meta.loud && profile.social === "C") {
+        score += 6;
+        reasons.push("The child appears comfortable in larger, louder settings.");
+      }
+
+      if (profile.likes && profile.likes.length > 0 && profile.foodLikes && profile.foodLikes.length > 0) {
+        reasons.push("The AI reviewed the child’s likes, dislikes, food preferences, values, and clothing style alongside the activity.");
+      }
+
+      const textResult = profileTextScore(profile, meta.description);
+      score += textResult.score;
+      reasons.push(...textResult.reasons);
 
       if (score < 0) score = 0;
       if (score > 100) score = 100;
@@ -482,7 +626,7 @@
       if (score < 70) label = "🟡 Proceed with Caution";
       if (score < 40) label = "🔴 Probably Not a Good Fit";
 
-      return { score, label };
+      return { score, label, reasons };
     }
 
     // --- DOM elements ---
@@ -561,6 +705,7 @@
       const description = document.getElementById("planDescription").value.trim();
 
       const meta = {
+        description,
         earlyMorning: activeTags.has("earlyMorning"),
         loud: activeTags.has("loud"),
         highEnergy: activeTags.has("highEnergy"),
@@ -569,16 +714,7 @@
         veryNewPlace: activeTags.has("veryNewPlace")
       };
 
-      const result = predictAttitude(
-        {
-          social: childProfile.social,
-          novelty: childProfile.novelty,
-          sensory: childProfile.sensory,
-          hatesEarlyMornings: childProfile.hatesEarlyMornings,
-          hatesSurprises: childProfile.hatesSurprises
-        },
-        meta
-      );
+      const result = predictAttitude(childProfile, meta);
 
       predictionDisplay.style.display = "block";
       predictionDisplay.innerHTML =
@@ -593,7 +729,13 @@
         "</p>" +
         (description
           ? "<p class='small'><strong>Activity:</strong> " + description + "</p>"
-          : "");
+          : "") +
+        "<p class='small'><strong>AI decision:</strong> It reviewed the full saved profile, including age, interests, values, likes, dislikes, food preferences, clothing style, and the activity tags.</p>" +
+        "<div class='small' style='margin-top:8px;'><strong>Why:</strong><ul style='margin:6px 0 0 18px; padding:0;'>" +
+        result.reasons
+          .map((reason) => "<li>" + reason + "</li>")
+          .join("") +
+        "</ul></div>";
     });
   </script>
 </body>
