@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ask Before Answer</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f5f5f7;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1, h2, h3 {
+      margin: 0 0 8px;
+    }
+    section {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-top: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 4px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      resize: vertical;
+    }
+    textarea {
+      min-height: 60px;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    button {
+      margin-top: 14px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #9ca3af;
+      cursor: default;
+    }
+    .tag-btn {
+      margin-right: 8px;
+      margin-top: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+      background: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .tag-btn.active {
+      border-color: #2563eb;
+      background: #dbeafe;
+    }
+    .small {
+      font-size: 12px;
+      color: #555;
+    }
+    .profile-box {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #333;
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ask Before Answer</h1>
+    <p class="small">
+      Child completes a short psychometric survey. Parents then test activities or gifts against the profile.
+    </p>
+
+    <!-- Child Survey -->
+    <section>
+      <h2>Child Survey</h2>
+      <p class="small">
+        This creates a profile like S–R–M (Solo, Routine, Mellow) or C–E–A (Crowd, Explorer, Active).
+      </p>
+
+      <label>
+        Age:
+        <input id="age" type="number" min="3" max="18" />
+      </label>
+
+      <label>
+        Interests (sports, art, Legos, etc.):
+        <textarea id="interests"></textarea>
+      </label>
+
+      <label>
+        Values (e.g., stay at home, one friend vs big group):
+        <textarea id="values"></textarea>
+      </label>
+
+      <label>
+        Things they like:
+        <textarea id="likes"></textarea>
+      </label>
+
+      <label>
+        Things they don&apos;t like:
+        <textarea id="dislikes"></textarea>
+      </label>
+
+      <label>
+        Clothing style:
+        <input id="clothingStyle" type="text" />
+      </label>
+
+      <label>
+        Favorite colors:
+        <input id="colors" type="text" />
+      </label>
+
+      <div style="margin-top: 14px;">
+        <p class="small"><strong>Social Energy</strong> — 1 = solo/quiet, 5 = big groups/loud</p>
+        <input id="socialEnergy" type="range" min="1" max="5" value="3" />
+      </div>
+
+      <div style="margin-top: 14px;">
+        <p class="small"><strong>Novelty vs Comfort</strong> — 1 = routine, 5 = loves new things</p>
+        <input id="novelty" type="range" min="1" max="5" value="3" />
+      </div>
+
+      <div style="margin-top: 14px;">
+        <p class="small"><strong>Sensory & Pace</strong> — 1 = mellow/quiet, 5 = high-energy/loud</p>
+        <input id="sensory" type="range" min="1" max="5" value="3" />
+      </div>
+
+      <label style="margin-top: 10px;">
+        <input id="hatesEarlyMornings" type="checkbox" />
+        Hates early mornings
+      </label>
+
+      <label>
+        <input id="hatesSurprises" type="checkbox" />
+        Hates surprises
+      </label>
+
+      <button id="saveProfileBtn">Save Child Profile</button>
+
+      <div id="profileDisplay" class="profile-box" style="display:none;"></div>
+    </section>
+
+    <!-- Parent Predictor -->
+    <section>
+      <h2>Parent Predictor</h2>
+      <p class="small">
+        Describe the activity or gift, then tag its “vibe” to see how well it matches the child profile.
+      </p>
+
+      <textarea
+        id="planDescription"
+        placeholder="e.g., Surprise 10th birthday trip to an indoor waterpark with 4 friends."
+      ></textarea>
+
+      <div style="margin-top: 10px;">
+        <button class="tag-btn" data-tag="earlyMorning">Early Morning</button>
+        <button class="tag-btn" data-tag="loud">Loud/Noisy</button>
+        <button class="tag-btn" data-tag="highEnergy">High Energy</button>
+        <button class="tag-btn" data-tag="unfamiliarPeople">Unfamiliar People</button>
+        <button class="tag-btn" data-tag="surprise">Surprise</button>
+        <button class="tag-btn" data-tag="veryNewPlace">Very New Place</button>
+      </div>
+
+      <button id="predictBtn" disabled>Predict Attitude</button>
+
+      <div id="predictionDisplay" class="profile-box" style="display:none;"></div>
+    </section>
+  </div>
+
+  <script>
+    // --- State ---
+    let childProfile = null;
+    const activeTags = new Set();
+
+    // --- Helpers ---
+    function dim(value, low, high) {
+      return value <= 3 ? low : high;
+    }
+
+    function scoreSurvey(answers) {
+      const social = dim(answers.socialEnergy, "S", "C"); // Solo vs Crowd
+      const novelty = dim(answers.novelty, "R", "E");     // Routine vs Explorer
+      const sensory = dim(answers.sensory, "M", "A");     // Mellow vs Active
+
+      return {
+        code: social + "-" + novelty + "-" + sensory,
+        social,
+        novelty,
+        sensory
+      };
+    }
+
+    function predictAttitude(profile, meta) {
+      let score = 80;
+
+      if (meta.unfamiliarPeople && profile.social === "S") score -= 15;
+      if (meta.veryNewPlace && profile.novelty === "R") score -= 15;
+      if ((meta.loud || meta.highEnergy) && profile.sensory === "M") score -= 20;
+      if (meta.earlyMorning && profile.hatesEarlyMornings) score -= 15;
+      if (meta.surprise && profile.hatesSurprises) score -= 15;
+
+      if (score < 0) score = 0;
+      if (score > 100) score = 100;
+
+      let label = "🟢 Great Match";
+      if (score < 70) label = "🟡 Proceed with Caution";
+      if (score < 40) label = "🔴 Probably Not a Good Fit";
+
+      return { score, label };
+    }
+
+    // --- DOM elements ---
+    const saveProfileBtn = document.getElementById("saveProfileBtn");
+    const profileDisplay = document.getElementById("profileDisplay");
+    const predictBtn = document.getElementById("predictBtn");
+    const predictionDisplay = document.getElementById("predictionDisplay");
+
+    // --- Save profile ---
+    saveProfileBtn.addEventListener("click", () => {
+      const age = document.getElementById("age").value;
+      const interests = document.getElementById("interests").value;
+      const values = document.getElementById("values").value;
+      const likes = document.getElementById("likes").value;
+      const dislikes = document.getElementById("dislikes").value;
+      const clothingStyle = document.getElementById("clothingStyle").value;
+      const colors = document.getElementById("colors").value;
+      const socialEnergy = Number(document.getElementById("socialEnergy").value);
+      const novelty = Number(document.getElementById("novelty").value);
+      const sensory = Number(document.getElementById("sensory").value);
+      const hatesEarlyMornings = document.getElementById("hatesEarlyMornings").checked;
+      const hatesSurprises = document.getElementById("hatesSurprises").checked;
+
+      const dims = scoreSurvey({ socialEnergy, novelty, sensory });
+
+      childProfile = {
+        age,
+        interests,
+        values,
+        likes,
+        dislikes,
+        clothingStyle,
+        colors,
+        hatesEarlyMornings,
+        hatesSurprises,
+        ...dims
+      };
+
+      profileDisplay.style.display = "block";
+      profileDisplay.innerHTML =
+        "<strong>Profile saved:</strong> " +
+        childProfile.code +
+        " (" +
+        childProfile.social +
+        "-" +
+        childProfile.novelty +
+        "-" +
+        childProfile.sensory +
+        ")<br>" +
+        "<span class='small'>Age: " + (age || "N/A") + "</span>";
+
+      predictBtn.disabled = false;
+      predictionDisplay.style.display = "none";
+    });
+
+    // --- Tag buttons ---
+    document.querySelectorAll(".tag-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tag = btn.getAttribute("data-tag");
+        if (activeTags.has(tag)) {
+          activeTags.delete(tag);
+          btn.classList.remove("active");
+        } else {
+          activeTags.add(tag);
+          btn.classList.add("active");
+        }
+      });
+    });
+
+    // --- Predict ---
+    predictBtn.addEventListener("click", () => {
+      if (!childProfile) return;
+
+      const description = document.getElementById("planDescription").value.trim();
+
+      const meta = {
+        earlyMorning: activeTags.has("earlyMorning"),
+        loud: activeTags.has("loud"),
+        highEnergy: activeTags.has("highEnergy"),
+        unfamiliarPeople: activeTags.has("unfamiliarPeople"),
+        surprise: activeTags.has("surprise"),
+        veryNewPlace: activeTags.has("veryNewPlace")
+      };
+
+      const result = predictAttitude(
+        {
+          social: childProfile.social,
+          novelty: childProfile.novelty,
+          sensory: childProfile.sensory,
+          hatesEarlyMornings: childProfile.hatesEarlyMornings,
+          hatesSurprises: childProfile.hatesSurprises
+        },
+        meta
+      );
+
+      predictionDisplay.style.display = "block";
+      predictionDisplay.innerHTML =
+        "<h3 style='margin-top:0;'>" +
+        result.label +
+        "</h3>" +
+        "<p>Compatibility score: <strong>" +
+        result.score +
+        "%</strong></p>" +
+        "<p class='small'>Profile code: " +
+        childProfile.code +
+        "</p>" +
+        (description
+          ? "<p class='small'><strong>Activity:</strong> " + description + "</p>"
+          : "");
+    });
+  </script>
+</body>
+</html>
