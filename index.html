@@ -128,10 +128,17 @@
         <textarea id="dislikes"></textarea>
       </label>
 
-      <label>
-        Clothing style:
-        <input id="clothingStyle" type="text" />
-      </label>
+      <div style="margin-top: 12px;">
+        <p class="small"><strong>Clothing style</strong></p>
+        <label>
+          <input type="radio" name="clothingStyle" value="comfortable and average" checked />
+          Comfortable and average
+        </label>
+        <label>
+          <input type="radio" name="clothingStyle" value="rougher and stylish" />
+          Rougher and stylish
+        </label>
+      </div>
 
       <label>
         Favorite colors:
@@ -250,7 +257,7 @@
       const values = document.getElementById("values").value;
       const likes = document.getElementById("likes").value;
       const dislikes = document.getElementById("dislikes").value;
-      const clothingStyle = document.getElementById("clothingStyle").value;
+      const clothingStyle = document.querySelector('input[name="clothingStyle"]:checked').value;
       const colors = document.getElementById("colors").value;
       const socialEnergy = Number(document.getElementById("socialEnergy").value);
       const novelty = Number(document.getElementById("novelty").value);
